@@ -18,7 +18,7 @@ const int encoder2APin = 4;
 const int encoder2BPin = 5;
 
 //Encoder Details
-int encoderResolution=3000;
+int encoderResolution=3000;  //Not sure
 
 // Define PID parameters
 double Kp = 1.0;  // Proportional gain
@@ -83,11 +83,11 @@ void speed(int leftSpeed, int rightSpeed) {
 // Function to adjust motor speeds based on PID output
 void adjustMotorSpeed(double output1, double output2) {
     // Adjust motor speeds using PID output
-    // Example code: Set motor speeds based on PID output
 
-    int offset = 0;
-    motorSpeed1 = setpoint + output1 +offset;
-    motorSpeed2 = setpoint + output2 +offset;
+    int offset1 = 0;
+    int offset2 = 0;
+    motorSpeed1 = setpoint + output1 +offset1;
+    motorSpeed2 = setpoint + output2 +offset2;
 }
 
 // Function to get actual speed of motor 1 
@@ -97,7 +97,6 @@ double getActualSpeed1() {
     unsigned long timeInterval = currentTime - prevTime;
 
     // Read encoder counts
-
     long currentCount1 = lastEncoded1;
 
     // Calculate speed for motor 1
