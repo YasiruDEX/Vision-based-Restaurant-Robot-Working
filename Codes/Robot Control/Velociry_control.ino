@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Encoder.h>
 
 //Encoder values
 volatile int lastEncoded1 = 0;
@@ -17,10 +16,6 @@ const int encoder1APin = 2;
 const int encoder1BPin = 3;
 const int encoder2APin = 4;
 const int encoder2BPin = 5;
-
-// Create encoder objects
-Encoder encoder1(encoder1APin, encoder1BPin);
-Encoder encoder2(encoder2APin, encoder2BPin);
 
 //Encoder Details
 int encoderResolution=3000;
@@ -44,7 +39,7 @@ volatile long prevCount2 = 0;
 unsigned long prevTime = 0;
 unsigned long currentTime;
 
-//Motor speed Controll pins
+//Motor speed control pins
 const int leftMotorChannel = 0;
 const int rightMotorChannel = 1;
 
