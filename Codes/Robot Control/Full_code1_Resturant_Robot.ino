@@ -124,7 +124,7 @@ double getActualSpeed1() {
     unsigned long timeInterval = currentTime - prevTime;
 
     // Read encoder counts
-    long currentCount1 = lastEncoded1;
+    long currentCount1 = encoderValue1;
 
     // Calculate speed for motor 1
     double speed1 = calculateSpeed(prevCount1, currentCount1, timeInterval);
@@ -142,7 +142,7 @@ double getActualSpeed2() {
     unsigned long timeInterval = currentTime - prevTime;
 
     // Read encoder counts
-    long currentCount2 = lastEncoded2;
+    long currentCount2 = encoderValue2;
 
     // Calculate speed for motor 1
     double speed2 = calculateSpeed(prevCount2, currentCount2, timeInterval);
