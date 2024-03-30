@@ -3,7 +3,7 @@
 
 //Encoder values
 volatile int lastEncoded1 = 0;
-volatile long encoderValue1 = 0;
+volatile long encoderValue1 = 0;  //This is the current encoder value
 int lastMSB1 = 0;
 int lastLSB1 = 0;
 
@@ -71,11 +71,21 @@ int readDistance(int address) {
   return -1; // Return -1 if reading was unsuccessful
 }
 
+//Find the absolute value
+double absvalue(double value){
+  if (value<0){
+    return -value;
+  }
+  else{
+    return value;
+  }
+}
+
 // PID control function
 void pidControl_speed() {
     // Measure actual speeds of motors (encoder feedback or other methods)
-    double actualSpeed1 = getActualSpeed1();
-    double actualSpeed2 = getActualSpeed2();
+    double actualSpeed1 = absvalue(getActualSpeed1());
+    double actualSpeed2 = absvalue(getActualSpeed2());
 
     // Calculate error
     double error1 = setpoint - actualSpeed1;
@@ -98,6 +108,8 @@ void pidControl_speed() {
     lastError = error1 + error2;
 }
 
+
+
 //Set the motor speed
 void speed(int leftSpeed, int rightSpeed) {
   // Set speed for left motor
@@ -105,6 +117,36 @@ void speed(int leftSpeed, int rightSpeed) {
 
   // Set speed for right motor
   analogWrite(rightMotorChannel, rightSpeed);
+}
+
+
+void go_distance(int left_distance,int right_distance){
+  /*if (first_time==1){
+    startingCount1=lastEncoded1;
+    first_time=0;
+  }
+  if (lastEncoded1<=startingCount1+left_distance){//change this to rotation counts
+    pidControl_speed();
+
+
+  
+
+  }
+  else{
+    first_time=1;
+    Break;
+  }
+  */
+
+  
+}
+
+void nintydegree{
+  if(rotation<need_rotation){
+    pidControl_speed();
+  }
+  
+
 }
 
 // Function to adjust motor speeds based on PID output
@@ -115,6 +157,8 @@ void adjustMotorSpeed(double output1, double output2) {
     int offset2 = 0;
     motorSpeed1 = setpoint + output1 +offset1;
     motorSpeed2 = setpoint + output2 +offset2;
+
+    speed(motorSpeed1,motorSpeed2);
 }
 
 // Function to get actual speed of motor 1 (replace with your own implementation)
@@ -193,7 +237,7 @@ void updateEncoder()
 }
 
 void setup(){
-
+  currentTime=mills();
   //Encoder Setup
   Serial.begin (9600);
 
