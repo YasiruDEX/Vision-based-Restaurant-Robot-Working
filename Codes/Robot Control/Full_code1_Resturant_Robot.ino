@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+
 // Motor A pins
 const int motorA1 = 2;
 const int motorA2 = 3;
@@ -9,6 +10,11 @@ const int motorAEn = 4; //PWM pin for Speed control
 const int motorB1 = 5;
 const int motorB2 = 6;
 const int motorBEn = 7; //PWM pin for Speed control
+
+// Define Speeed values
+const int MAX_SPEED = 200;
+const int MIN_SPEED = 100;
+const int BASE_SPEED = 150;
 
 //Encoder values
 volatile int lastEncoded1 = 0;
@@ -33,8 +39,8 @@ const int encoder2BPin = 5;
 int encoderResolution=3000;  //Not sure
 
 //Radius values
-const double R = ;
-const double r = ;
+const double R =50 ;
+const double r =10 ;
 
 // Define PID parameters
 double Kp = 1.0;  // Proportional gain
@@ -42,7 +48,8 @@ double Ki = 0.0;  // Integral gain
 double Kd = 0.0;  // Derivative gain
 
 // Define variables
-double setpoint = 100.0;  // Desired speed for both motors
+//double setpoint1;  // Desired speed for both motors
+//double setpoint2 ;  // Desired speed for both motors
 double motorSpeed1 = 0.0; // Current speed of motor 1
 double motorSpeed2 = 0.0; // Current speed of motor 2
 
@@ -97,14 +104,14 @@ double absvalue(double value){
 }
 
 // PID control function
-void pidControl_speed() {
+void pidControl_speed(double setpoint1,double setpoint2) {
     // Measure actual speeds of motors (encoder feedback or other methods)
     double actualSpeed1 = absvalue(getActualSpeed1());
     double actualSpeed2 = absvalue(getActualSpeed2());
 
     // Calculate error
-    double error1 = setpoint - actualSpeed1;
-    double error2 = setpoint - actualSpeed2;
+    double error1 = setpoint1 - actualSpeed1;
+    double error2 = setpoint2 - actualSpeed2;
 
     // Integral term
     errorSum += error1 + error2;
@@ -141,8 +148,8 @@ void adjustMotorSpeed(double output1, double output2) {
 
     int offset1 = 0;
     int offset2 = 0;
-    motorSpeed1 = setpoint + output1 +offset1;
-    motorSpeed2 = setpoint + output2 +offset2;
+    motorSpeed1 = BASE_SPEED + output1 +offset1;
+    motorSpeed2 = BASE_SPEED + output2 +offset2;
 
     speed(motorSpeed1,motorSpeed2);
 }
@@ -223,7 +230,7 @@ void updateEncoder()
 }
 
 void setup(){
-  currentTime=mills();
+  currentTime=millis();
   //Encoder Setup
   Serial.begin (9600);
 
@@ -240,83 +247,75 @@ void setup(){
   
 }
 
-void nintydegree{
-  if(rotation<need_rotation){
-    pidControl_speed();
-  }
-  
 
-}
-
-void controlMotors(int A1, int A2, int A_SPEED = BASE_SPEED, int B1, int B2, int B_SPEED = BASE_SPEED) {
+void controlMotors(int pinA1, int pinA2, int pinB1, int pinB2, double A_SPEED = 150, double B_SPEED = 150) {
   //Motor 1 Control
-  digitalWrite(motorA1, A1);
-  digitalWrite(motorA2, A2);
+  digitalWrite( motorA1, pinA1);
+  digitalWrite( motorA2, pinA2);
 
   //Motor 2 Control
-  digitalWrite(motorB1, B1);
-  digitalWrite(motorB2, B2);
+  digitalWrite( motorB1, pinB1);
+  digitalWrite( motorB2, pinB2);
 
   //Control the speeds of the both motors
-  speed(A_SPEED,B_SPEED);
+  pidControl_speed(A_SPEED, B_SPEED);
 }
 
 // Function to stop the motors
 void stopMotors() {
-  controlMotors(0, 0, 0, 0, 0, 0);
+  controlMotors(0, 0, 0, 0);
 }
 
 void Forward(int A_Speed, int B_Speed){
     controlMotors(1, 0, 1, 0, A_Speed, B_Speed);
 }
 
-void Right(int A_SPEED, int B_SPEED){
+void Right(int A_Speed, int B_Speed){
     controlMotors(0, 0, 1, 0, A_Speed, B_Speed);
 }
 
-void Left(int A_SPEED, int B_SPEED){
+void Left(int A_Speed, int B_Speed){
     controlMotors(1, 0, 0, 0, A_Speed, B_Speed);
 }
 
 void Rotate(int direction){
-
-  if (encoderFlag){
-    int startEncoderValue1= encoderValue1;
-    int startEncoderValue2= encoderValue2;
-    encoderFalg = false;
+    int startEncoderValue1;
+    int startEncoderValue2;
+  if ( encoderFlag){
+    startEncoderValue1= encoderValue1;
+    startEncoderValue2= encoderValue2;
+    encoderFlag = false;
   }
   
   int expectedRotationValue = (R/(4*r))*encoderResolution;
 
   if (direction == 0){ // 0 for right 90 rotation
-  if (abs(encoderValue1 - startEncoderValue1 <= expectedRotationValue)) && (encoderValue2 - startEncoderValue2 <= expectedRotationValue)){
-    controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
-  }
-  else if (abs(encoderValue1 - startEncoderValue1) < expectedRotationValue){
-    controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
-  }
-  else if (abs(encoderValue2 - startEncoderValue2) < expectedRotationValue){
-    controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
-  }
-  else{
-    encoderFlag = true;
-    break;
-  }
+    if ((absvalue(encoderValue1 - startEncoderValue1) <= expectedRotationValue) && (absvalue(encoderValue2 - startEncoderValue2) <= expectedRotationValue)){
+      controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
+    }
+    else if (absvalue(encoderValue1 - startEncoderValue1) < expectedRotationValue){
+      controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
+    }
+    else if (absvalue(encoderValue2 - startEncoderValue2) < expectedRotationValue){
+      controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
+    }
+    else{
+      encoderFlag = true;
+    }
   }
   else if (direction == 1){ // 1 for left 90 rotation
-  if (abs(encoderValue1 - startEncoderValue1 <= expectedRotationValue)) && (encoderValue2 - startEncoderValue2 <= expectedRotationValue)){
-    controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
-  }
-  else if (abs(encoderValue1 - startEncoderValue1) < expectedRotationValue){
-    controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
-  }
-  else if (abs(encoderValue2 - startEncoderValue2) < expectedRotationValue){
-    controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
-  }
-  else{
-    encoderFlag = true;
-    break;
-  }
+    if (((absvalue(encoderValue1 - startEncoderValue1) <= expectedRotationValue)) && (absvalue(encoderValue2 - startEncoderValue2) <= expectedRotationValue)){
+      controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
+    }
+    else if (absvalue(encoderValue1 - startEncoderValue1) < expectedRotationValue){
+      controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
+    }
+    else if (absvalue(encoderValue2 - startEncoderValue2) < expectedRotationValue){
+      controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
+    }
+    else{
+      encoderFlag = true;
+    }
   }
 }
 
@@ -335,7 +334,7 @@ void loop() {
   }
   else{
     // Perform PID control
-    pidControl_speed();
+    pidControl_speed(BASE_SPEED,BASE_SPEED);
 
     // Other tasks...
   }
