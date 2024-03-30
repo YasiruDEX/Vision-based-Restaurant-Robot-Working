@@ -1,0 +1,83 @@
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_ab2ef/fast && /usr/bin/make -f CMakeFiles/cmTC_ab2ef.dir/build.make CMakeFiles/cmTC_ab2ef.dir/build
+make[1]: Entering directory '/home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_ab2ef.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_ab2ef.dir/src.c.o   -c /home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_ab2ef
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ab2ef.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    -rdynamic CMakeFiles/cmTC_ab2ef.dir/src.c.o  -o cmTC_ab2ef 
+/usr/bin/ld: CMakeFiles/cmTC_ab2ef.dir/src.c.o: in function `main':
+src.c:(.text+0x46): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x52): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x63): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_ab2ef.dir/build.make:87: cmTC_ab2ef] Error 1
+make[1]: Leaving directory '/home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_ab2ef/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_dc69b/fast && /usr/bin/make -f CMakeFiles/cmTC_dc69b.dir/build.make CMakeFiles/cmTC_dc69b.dir/build
+make[1]: Entering directory '/home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_dc69b.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_dc69b.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_dc69b
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_dc69b.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_dc69b.dir/CheckFunctionExists.c.o  -o cmTC_dc69b  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_dc69b.dir/build.make:87: cmTC_dc69b] Error 1
+make[1]: Leaving directory '/home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_dc69b/fast] Error 2
+
+
+
+Performing C++ SOURCE FILE Test OpenCL_CXX_WORKS failed with the following output:
+Change Dir: /home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_52df1/fast && /usr/bin/make -f CMakeFiles/cmTC_52df1.dir/build.make CMakeFiles/cmTC_52df1.dir/build
+make[1]: Entering directory '/home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_52df1.dir/src.cxx.o
+/usr/bin/c++   -I/include/internal  -DBT_USE_DOUBLE_PRECISION -Wall -Wuninitialized -Winit-self -Wunused-function -Wunused-label -Wunused-variable -Wunused-but-set-variable -Wunused-but-set-parameter -Warray-bounds -Wtype-limits -Wreturn-type -Wsequence-point -Wparentheses -Wmissing-braces -Wchar-subscripts -Wswitch -Wwrite-strings -Wenum-compare -Wempty-body -std=c++11 -fopenmp -DOpenCL_CXX_WORKS   -o CMakeFiles/cmTC_52df1.dir/src.cxx.o -c /home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp/src.cxx
+/home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp/src.cxx:2:10: fatal error: CL/cl.hpp: No such file or directory
+    2 | #include <CL/cl.hpp>
+      |          ^~~~~~~~~~~
+compilation terminated.
+make[1]: *** [CMakeFiles/cmTC_52df1.dir/build.make:66: CMakeFiles/cmTC_52df1.dir/src.cxx.o] Error 1
+make[1]: Leaving directory '/home/sandun/catkin_ws/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_52df1/fast] Error 2
+
+
+Source file was:
+
+#include <CL/cl.hpp>
+int main() {
+  cl::Context context;
+  cl::Platform platform;
+  cl::Device device;
+  return 0;
+}

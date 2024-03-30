@@ -1,0 +1,8 @@
+prefix=/home/sandun/catkin_ws/install
+
+Name: resrob_arduino_serial
+Description: Description of resrob_arduino_serial
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
