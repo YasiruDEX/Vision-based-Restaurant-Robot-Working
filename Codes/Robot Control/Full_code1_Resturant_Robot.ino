@@ -1,11 +1,31 @@
-#include <WiFi.h>
-#include <Encoder.h>
+#include <Arduino.h>
+#include <Wire.h>
+
+//Encoder values
+volatile int lastEncoded1 = 0;
+volatile long encoderValue1 = 0;
+int lastMSB1 = 0;
+int lastLSB1 = 0;
+
+volatile int lastEncoded2 = 0;
+volatile long encoderValue2 = 0;
+int lastMSB2 = 0;
+int lastLSB2 = 0;
+
+// Define encoder pins
+const int encoder1APin = 2;
+const int encoder1BPin = 3;
+const int encoder2APin = 4;
+const int encoder2BPin = 5;
+
+//Encoder Details
+int encoderResolution=3000;  //Not sure
 
 // Define PID parameters
 double Kp = 1.0;  // Proportional gain
 double Ki = 0.0;  // Integral gain
 double Kd = 0.0;  // Derivative gain
-\
+
 // Define variables
 double setpoint = 100.0;  // Desired speed for both motors
 double motorSpeed1 = 0.0; // Current speed of motor 1
@@ -18,10 +38,14 @@ double lastError = 0.0;   // Previous error
 volatile long prevCount1 = 0;
 volatile long prevCount2 = 0;
 unsigned long prevTime = 0;
+unsigned long currentTime;
 
-//Motor speed Controll pins
+//Motor speed control pins
 const int leftMotorChannel = 0;
 const int rightMotorChannel = 1;
+
+// Ultrasonic minimum distance
+int distace_to_Obstacle=30;
 
 // Function to read distance from a single ultrasonic sensor
 int readDistance(int address) {
@@ -48,7 +72,7 @@ int readDistance(int address) {
 }
 
 // PID control function
-void pidControl() {
+void pidControl_speed() {
     // Measure actual speeds of motors (encoder feedback or other methods)
     double actualSpeed1 = getActualSpeed1();
     double actualSpeed2 = getActualSpeed2();
@@ -77,32 +101,30 @@ void pidControl() {
 //Set the motor speed
 void speed(int leftSpeed, int rightSpeed) {
   // Set speed for left motor
-  ledcWrite(leftMotorChannel, leftSpeed);
+  analogWrite(leftMotorChannel, leftSpeed);
 
   // Set speed for right motor
-  ledcWrite(rightMotorChannel, rightSpeed);
+  analogWrite(rightMotorChannel, rightSpeed);
 }
 
 // Function to adjust motor speeds based on PID output
 void adjustMotorSpeed(double output1, double output2) {
     // Adjust motor speeds using PID output
-    // Example code: Set motor speeds based on PID output
 
-    int offset = 0;
-    motorSpeed1 = setpoint + output1 +offset;
-    motorSpeed2 = setpoint + output2 +offset;
+    int offset1 = 0;
+    int offset2 = 0;
+    motorSpeed1 = setpoint + output1 +offset1;
+    motorSpeed2 = setpoint + output2 +offset2;
 }
 
 // Function to get actual speed of motor 1 (replace with your own implementation)
 double getActualSpeed1() {
-    // Get current time
-    unsigned long currentTime = millis();
 
     // Calculate time interval
     unsigned long timeInterval = currentTime - prevTime;
 
     // Read encoder counts
-    long currentCount1 = encoder1.read();
+    long currentCount1 = lastEncoded1;
 
     // Calculate speed for motor 1
     double speed1 = calculateSpeed(prevCount1, currentCount1, timeInterval);
@@ -115,14 +137,12 @@ double getActualSpeed1() {
 }
 
 double getActualSpeed2() {
-    // Get current time
-    unsigned long currentTime = millis();
 
     // Calculate time interval
     unsigned long timeInterval = currentTime - prevTime;
 
     // Read encoder counts
-    long currentCount2 = encoder2.read();
+    long currentCount2 = lastEncoded2;
 
     // Calculate speed for motor 1
     double speed2 = calculateSpeed(prevCount2, currentCount2, timeInterval);
@@ -144,6 +164,52 @@ double calculateSpeed(long prevCount, long currentCount, unsigned long timeInter
     return speed;
 }
 
+void updateEncoder()
+{
+
+  //Encoder Update for Encoder 1
+  int MSB1 = digitalRead(encoder1APin); //MSB = most significant bit
+  int LSB1 = digitalRead(encoder1BPin); //LSB = least significant bit
+
+  int encoded1 = (MSB1 << 1) |LSB1; //converting the 2 pin value to single number
+  int sum1  = (lastEncoded1 << 2) | encoded1; //adding it to the previous encoded value
+
+  if(sum1 == 0b1101 || sum1 == 0b0100 || sum1 == 0b0010 || sum1 == 0b1011) encoderValue1 ++;
+  if(sum1 == 0b1110 || sum1 == 0b0111 || sum1 == 0b0001 || sum1 == 0b1000) encoderValue1 --;
+
+  lastEncoded1 = encoded1; //store this value for next time
+
+  //Encoder Update for Encoder 2
+  int MSB2 = digitalRead(encoder2APin); //MSB = most significant bit
+  int LSB2 = digitalRead(encoder2BPin); //LSB = least significant bit
+
+  int encoded2 = (MSB2 << 1) |LSB2; //converting the 2 pin value to single number
+  int sum2  = (lastEncoded2 << 2) | encoded2; //adding it to the previous encoded value
+
+  if(sum2 == 0b1101 || sum2 == 0b0100 || sum2 == 0b0010 || sum2 == 0b1011) encoderValue2 ++;
+  if(sum2 == 0b1110 || sum2 == 0b0111 || sum2 == 0b0001 || sum2 == 0b1000) encoderValue2 --;
+
+  lastEncoded2 = encoded2; //store this value for next time
+}
+
+void setup(){
+
+  //Encoder Setup
+  Serial.begin (9600);
+
+  pinMode(encoder1APin, INPUT); 
+  pinMode(encoder1BPin, INPUT);
+
+  digitalWrite(encoder1APin, HIGH); //turn pullup resistor on
+  digitalWrite(encoder1BPin, HIGH); //turn pullup resistor on
+
+  //call updateEncoder() when any high/low changed seen
+  //on interrupt 0 (pin 2), or interrupt 1 (pin 3) 
+  attachInterrupt(0, updateEncoder, CHANGE); 
+  attachInterrupt(1, updateEncoder, CHANGE);
+  
+}
+
 // Main loop
 void loop() {
   //Get Distances from Ultrasonic sensors 
@@ -159,7 +225,7 @@ void loop() {
   }
   else{
     // Perform PID control
-    pidControl();
+    pidControl_speed();
 
     // Other tasks...
   }
