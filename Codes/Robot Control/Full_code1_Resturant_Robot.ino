@@ -21,6 +21,8 @@ volatile long encoderValue2 = 0;
 int lastMSB2 = 0;
 int lastLSB2 = 0;
 
+bool encoderFlag= true;
+
 // Define encoder pins
 const int encoder1APin = 2;
 const int encoder1BPin = 3;
@@ -29,6 +31,10 @@ const int encoder2BPin = 5;
 
 //Encoder Details
 int encoderResolution=3000;  //Not sure
+
+//Radius values
+const double R = ;
+const double r = ;
 
 // Define PID parameters
 double Kp = 1.0;  // Proportional gain
@@ -272,12 +278,46 @@ void Left(int A_SPEED, int B_SPEED){
     controlMotors(1, 0, 0, 0, A_Speed, B_Speed);
 }
 
-void Right90(int A_SPEED, int B_SPEED){
-    controlMotors(0, 0, 1, 0, A_Speed, B_Speed);
-}
+void Rotate(int direction){
 
-void Left90(int A_SPEED, int B_SPEED){
-    controlMotors(1, 0, 0, 0, A_Speed, B_Speed);
+  if (encoderFlag){
+    int startEncoderValue1= encoderValue1;
+    int startEncoderValue2= encoderValue2;
+    encoderFalg = false;
+  }
+  
+  int expectedRotationValue = (R/(4*r))*encoderResolution;
+
+  if (direction == 0){ // 0 for right 90 rotation
+  if (abs(encoderValue1 - startEncoderValue1 <= expectedRotationValue)) && (encoderValue2 - startEncoderValue2 <= expectedRotationValue)){
+    controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
+  }
+  else if (abs(encoderValue1 - startEncoderValue1) < expectedRotationValue){
+    controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
+  }
+  else if (abs(encoderValue2 - startEncoderValue2) < expectedRotationValue){
+    controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
+  }
+  else{
+    encoderFlag = true;
+    break;
+  }
+  }
+  else if (direction == 1){ // 1 for left 90 rotation
+  if (abs(encoderValue1 - startEncoderValue1 <= expectedRotationValue)) && (encoderValue2 - startEncoderValue2 <= expectedRotationValue)){
+    controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
+  }
+  else if (abs(encoderValue1 - startEncoderValue1) < expectedRotationValue){
+    controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
+  }
+  else if (abs(encoderValue2 - startEncoderValue2) < expectedRotationValue){
+    controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
+  }
+  else{
+    encoderFlag = true;
+    break;
+  }
+  }
 }
 
 // Main loop
