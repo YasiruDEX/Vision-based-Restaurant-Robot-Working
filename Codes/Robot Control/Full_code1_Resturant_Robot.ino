@@ -1,6 +1,15 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+// Motor A pins
+const int motorA1 = 2;
+const int motorA2 = 3;
+const int motorAEn = 4; //PWM pin for Speed control
+// Motor B pins
+const int motorB1 = 5;
+const int motorB2 = 6;
+const int motorBEn = 7; //PWM pin for Speed control
+
 //Encoder values
 volatile int lastEncoded1 = 0;
 volatile long encoderValue1 = 0;  //This is the current encoder value
@@ -120,35 +129,6 @@ void speed(int leftSpeed, int rightSpeed) {
 }
 
 
-void go_distance(int left_distance,int right_distance){
-  /*if (first_time==1){
-    startingCount1=lastEncoded1;
-    first_time=0;
-  }
-  if (lastEncoded1<=startingCount1+left_distance){//change this to rotation counts
-    pidControl_speed();
-
-
-  
-
-  }
-  else{
-    first_time=1;
-    Break;
-  }
-  */
-
-  
-}
-
-void nintydegree{
-  if(rotation<need_rotation){
-    pidControl_speed();
-  }
-  
-
-}
-
 // Function to adjust motor speeds based on PID output
 void adjustMotorSpeed(double output1, double output2) {
     // Adjust motor speeds using PID output
@@ -252,6 +232,52 @@ void setup(){
   attachInterrupt(0, updateEncoder, CHANGE); 
   attachInterrupt(1, updateEncoder, CHANGE);
   
+}
+
+void nintydegree{
+  if(rotation<need_rotation){
+    pidControl_speed();
+  }
+  
+
+}
+
+void controlMotors(int A1, int A2, int A_SPEED = BASE_SPEED, int B1, int B2, int B_SPEED = BASE_SPEED) {
+  //Motor 1 Control
+  digitalWrite(motorA1, A1);
+  digitalWrite(motorA2, A2);
+
+  //Motor 2 Control
+  digitalWrite(motorB1, B1);
+  digitalWrite(motorB2, B2);
+
+  //Control the speeds of the both motors
+  speed(A_SPEED,B_SPEED);
+}
+
+// Function to stop the motors
+void stopMotors() {
+  controlMotors(0, 0, 0, 0, 0, 0);
+}
+
+void Forward(int A_Speed, int B_Speed){
+    controlMotors(1, 0, 1, 0, A_Speed, B_Speed);
+}
+
+void Right(int A_SPEED, int B_SPEED){
+    controlMotors(0, 0, 1, 0, A_Speed, B_Speed);
+}
+
+void Left(int A_SPEED, int B_SPEED){
+    controlMotors(1, 0, 0, 0, A_Speed, B_Speed);
+}
+
+void Right90(int A_SPEED, int B_SPEED){
+    controlMotors(0, 0, 1, 0, A_Speed, B_Speed);
+}
+
+void Left90(int A_SPEED, int B_SPEED){
+    controlMotors(1, 0, 0, 0, A_Speed, B_Speed);
 }
 
 // Main loop
