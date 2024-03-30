@@ -3,13 +3,13 @@
 
 
 // Motor A pins
-const int motorA1 = 2;
-const int motorA2 = 3;
-const int motorAEn = 4; //PWM pin for Speed control
+const int motorA1 = 6;
+const int motorA2 = 7;
+const int motorAEn = 8; //PWM pin for Speed control
 // Motor B pins
-const int motorB1 = 5;
-const int motorB2 = 6;
-const int motorBEn = 7; //PWM pin for Speed control
+const int motorB1 = 9;
+const int motorB2 = 10;
+const int motorBEn = 11; //PWM pin for Speed control
 
 // Define Speeed values
 const int MAX_SPEED = 200;
@@ -39,8 +39,8 @@ const int encoder2BPin = 5;
 int encoderResolution=3000;  //Not sure
 
 //Radius values
-const double R =50 ;
-const double r =10 ;
+const double R = 50 ;
+const double r = 10 ;
 
 // Define PID parameters
 double Kp = 1.0;  // Proportional gain
@@ -67,7 +67,19 @@ const int leftMotorChannel = 0;
 const int rightMotorChannel = 1;
 
 // Ultrasonic minimum distance
-int distace_to_Obstacle=30;
+int distance_to_Obstacle=30;
+
+// Define UART values
+const int STOP = 0;
+const int SLOW_FORWARD = 1;
+const int MEDIUM_FORWARD = 2;
+const int FAST_FORWARD = 3;
+const int SLOW_RIGHT = 4;
+const int SLOW_LEFT = 5;
+const int RIGHT_90 = 6;
+const int LEFT_90 = 7;
+
+int receivedInt = 0;
 
 // Function to read distance from a single ultrasonic sensor
 int readDistance(int address) {
@@ -270,55 +282,94 @@ void Forward(int A_Speed, int B_Speed){
     controlMotors(1, 0, 1, 0, A_Speed, B_Speed);
 }
 
-void Right(int A_Speed, int B_Speed){
-    controlMotors(0, 0, 1, 0, A_Speed, B_Speed);
+void Rotate_Slow(int direction){
+  controlMotors(1, 0, 0, 1, BASE_SPEED, BASE_SPEED);
 }
 
-void Left(int A_Speed, int B_Speed){
-    controlMotors(1, 0, 0, 0, A_Speed, B_Speed);
-}
-
-void Rotate(int direction){
+void Rotate_90(int direction){
     int startEncoderValue1;
     int startEncoderValue2;
-  if ( encoderFlag){
-    startEncoderValue1= encoderValue1;
-    startEncoderValue2= encoderValue2;
-    encoderFlag = false;
-  }
+    if ( encoderFlag){
+      startEncoderValue1= encoderValue1;
+      startEncoderValue2= encoderValue2;
+      encoderFlag = false;
+    }
   
-  int expectedRotationValue = (R/(4*r))*encoderResolution;
+    int expectedRotationValue = (R/(4*r))*encoderResolution;
 
-  if (direction == 0){ // 0 for right 90 rotation
-    if ((absvalue(encoderValue1 - startEncoderValue1) <= expectedRotationValue) && (absvalue(encoderValue2 - startEncoderValue2) <= expectedRotationValue)){
-      controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
+    if (direction == 0){ // 0 for right 90 rotation
+        if ((absvalue(encoderValue1 - startEncoderValue1) <= expectedRotationValue) && (absvalue(encoderValue2 - startEncoderValue2) <= expectedRotationValue)){
+          controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
+        }
+        else if (absvalue(encoderValue1 - startEncoderValue1) < expectedRotationValue){
+          controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
+        }
+        else if (absvalue(encoderValue2 - startEncoderValue2) < expectedRotationValue){
+          controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
+        }
+        else{
+          encoderFlag = true;
+          receivedInt = 0;
+        }
     }
-    else if (absvalue(encoderValue1 - startEncoderValue1) < expectedRotationValue){
-      controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
+    else if (direction == 1){ // 1 for left 90 rotation
+        if (((absvalue(encoderValue1 - startEncoderValue1) <= expectedRotationValue)) && (absvalue(encoderValue2 - startEncoderValue2) <= expectedRotationValue)){
+          controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
+        }
+        else if (absvalue(encoderValue1 - startEncoderValue1) < expectedRotationValue){
+          controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
+        }
+        else if (absvalue(encoderValue2 - startEncoderValue2) < expectedRotationValue){
+          controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
+        }
+        else{
+          encoderFlag = true;
+          receivedInt = 0;
+        }
     }
-    else if (absvalue(encoderValue2 - startEncoderValue2) < expectedRotationValue){
-      controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
-    }
-    else{
-      encoderFlag = true;
-    }
-  }
-  else if (direction == 1){ // 1 for left 90 rotation
-    if (((absvalue(encoderValue1 - startEncoderValue1) <= expectedRotationValue)) && (absvalue(encoderValue2 - startEncoderValue2) <= expectedRotationValue)){
-      controlMotors(1,0, 0, 1, MAX_SPEED, MAX_SPEED);
-    }
-    else if (absvalue(encoderValue1 - startEncoderValue1) < expectedRotationValue){
-      controlMotors(1, 0, 0, 0, MAX_SPEED, MAX_SPEED);
-    }
-    else if (absvalue(encoderValue2 - startEncoderValue2) < expectedRotationValue){
-      controlMotors(0, 0, 0, 1, MAX_SPEED, MAX_SPEED);
-    }
-    else{
-      encoderFlag = true;
-    }
-  }
 }
 
+void loop() {
+
+    if (Serial.available() > 0) {
+        // Read the incoming byte
+        receivedInt = Serial.parseInt();
+    }
+        
+      // Check the received command and control motors accordingly
+      switch (receivedInt) {
+          case STOP:
+              stopMotors();
+              break;
+          case SLOW_FORWARD:
+              Forward(MIN_SPEED, MIN_SPEED);
+              break;
+          case MEDIUM_FORWARD:
+              Forward(BASE_SPEED, BASE_SPEED);
+              break;
+          case FAST_FORWARD:
+              Forward(MAX_SPEED, MAX_SPEED);
+              break;
+          case SLOW_RIGHT:
+              Rotate_Slow(0);
+              break;
+          case SLOW_LEFT:
+              Rotate_Slow(1);
+              break;
+          case RIGHT_90:
+              Rotate_90(0);
+          case LEFT_90:
+              Rotate_90(1);
+              break;
+          default:
+              // Stop the motors if invalid command received
+              stopMotors();
+              break;
+  }
+    
+}
+
+/*
 // Main loop
 void loop() {
   //Get Distances from Ultrasonic sensors 
@@ -338,5 +389,4 @@ void loop() {
 
     // Other tasks...
   }
-
-}
+ */
