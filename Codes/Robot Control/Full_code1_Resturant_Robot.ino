@@ -387,31 +387,31 @@ void Forward(int A_Speed, int B_Speed) {
   //controlMotors(1, 0, 1, 0, A_Speed, B_Speed);
   pidControl_speed(A_Speed, B_Speed);
   analogWrite(LPWM1, actualMotorSpeed1);
-  analogWrite(RPWM1, 0);
+  digitalWrite(RPWM1, HIGH);
 
 
   analogWrite(LPWM2, actualMotorSpeed2);
-  analogWrite(RPWM2, 0);
+  digitalWrite(RPWM2, HIGH);
 }
 
 void Motor1L(int Speed) {
   analogWrite(LPWM1, Speed);
-  analogWrite(RPWM1, 0);
+  digitalWrite(RPWM1, HIGH);
 }
 
 void Motor1R(int Speed) {
-  analogWrite(LPWM1, 0);
+  digitalWrite(LPWM1, HIGH);
   analogWrite(RPWM1, Speed);
 }
 
 void Motor2R(int Speed) {
-  analogWrite(LPWM2, 0);
+  digitalWrite(LPWM2, HIGH);
   analogWrite(RPWM2, Speed);
 }
 
 void Motor2L(int Speed) {
   analogWrite(LPWM2, Speed);
-  analogWrite(RPWM2, 0);
+  digitalWrite(RPWM2, HIGH);
 }
 
 /*void Rotate_Slow(int direction){
