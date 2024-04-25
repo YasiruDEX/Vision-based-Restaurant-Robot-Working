@@ -5,14 +5,14 @@
 // Motor A pins
 const int RPWM1 = 6;
 const int LPWM1 = 7;
-const int R_EN1 = 8; //PWM pin for Speed control
-const int L_EN1 = 8; //PWM pin for Speed control
+const int R_EN1 = 24;  //PWM pin for Speed control
+const int L_EN1 = 25;  //PWM pin for Speed control
 
 // Motor B pins
-const int RPWM2 = 6;
-const int LPWM2 = 7;
-const int R_EN2 = 8; //PWM pin for Speed control
-const int L_EN2 = 8; //PWM pin for Speed control
+const int RPWM2 = 8;
+const int LPWM2 = 9;
+const int R_EN2 = 26;  //PWM pin for Speed control
+const int L_EN2 = 27;  //PWM pin for Speed control
 
 // Define Speeed values
 const int MAX_SPEED = 200;
@@ -30,20 +30,22 @@ volatile long encoderValue2 = 0;
 int lastMSB2 = 0;
 int lastLSB2 = 0;
 
-bool encoderFlag= true;
+bool encoderFlag = true;
+bool TimeFlag = true;
+bool distanceflag = true;
 
 // Define encoder pins
-const int encoder1APin = 2;
-const int encoder1BPin = 3;
-const int encoder2APin = 4;
-const int encoder2BPin = 5;
+const int encoder1APin = 3;
+const int encoder1BPin = 4;
+const int encoder2APin = 5;
+const int encoder2BPin = 6;
 
 //Encoder Details
-int encoderResolution=3000;  //Not sure
+int encoderResolution = 3000;  //Not sure
 
 //Radius values
-const double R = 50 ;
-const double r = 10 ;
+const double R = 50;
+const double r = 10;
 
 // Define PID parameters
 double Kp = 1.0;  // Proportional gain
@@ -53,11 +55,11 @@ double Kd = 0.0;  // Derivative gain
 // Define variables
 //double setpoint1;  // Desired speed for both motors
 //double setpoint2 ;  // Desired speed for both motors
-double actualMotorSpeed1 = 0.0; // Current speed of motor 1
-double actualMotorSpeed2 = 0.0; // Current speed of motor 2
+double actualMotorSpeed1 = 0.0;  // Current speed of motor 1
+double actualMotorSpeed2 = 0.0;  // Current speed of motor 2
 
-double errorSum = 0.0;    // Integral of error
-double lastError = 0.0;   // Previous error
+double errorSum = 0.0;   // Integral of error
+double lastError = 0.0;  // Previous error
 
 //Angle errors
 double errorSum1;
@@ -71,13 +73,14 @@ volatile long prevCount1 = 0;
 volatile long prevCount2 = 0;
 unsigned long prevTime = 0;
 unsigned long currentTime;
+unsigned long nowTime;
 
 //Motor speed control pins
 //const int leftMotorChannel = 0;
 //const int rightMotorChannel = 1;
 
 // Ultrasonic minimum distance
-int distance_to_Obstacle=30;
+int distance_to_Obstacle = 30;
 
 // Define UART values
 const int STOP = 0;
@@ -92,6 +95,13 @@ const int LEFT_90 = 7;
 int receivedInt = 0;
 
 int expectedRotationValue;
+
+int startEncoderValue1;
+int startEncoderValue2;
+int starttime;
+
+int newLocation1;
+int newLocation2;
 
 
 // Function to read distance from a single ultrasonic sensor
@@ -115,104 +125,123 @@ int readDistance(int address) {
     return reading;
   }
 
-  return -1; // Return -1 if reading was unsuccessful
+  return -1;  // Return -1 if reading was unsuccessful
 }
 
 //Find the absolute value
-double absvalue(double value){
-  if (value<0){
+double absvalue(double value) {
+  if (value < 0) {
     return -value;
-  }
-  else{
+  } else {
     return value;
   }
 }
 
 // PID control function
-void pidControl_speed(double setpoint1,double setpoint2) {
-    // Measure actual speeds of motors (encoder feedback or other methods)
-    double actualSpeed1 = absvalue(getActualSpeed1());
-    double actualSpeed2 = absvalue(getActualSpeed2());
+void pidControl_speed(double setpoint1, double setpoint2) {
+  // Measure actual speeds of motors (encoder feedback or other methods)
+  double actualSpeed1 = absvalue(getActualSpeed1());
+  double actualSpeed2 = absvalue(getActualSpeed2());
 
-    // Calculate error
-    double error1 = setpoint1 - actualSpeed1;
-    double error2 = setpoint2 - actualSpeed2;
+  // Calculate error
+  double error1 = setpoint1 - actualSpeed1;
+  double error2 = setpoint2 - actualSpeed2;
 
-    // Integral term
-    errorSum += error1 + error2;
+  // Integral term
+  errorSum += error1 + error2;
 
-    // Derivative term
-    double dError = (error1 + error2) - lastError;
+  // Derivative term
+  double dError = (error1 + error2) - lastError;
 
-    // Calculate PID output
-    double output1 = Kp * error1 + Ki * errorSum + Kd * dError;
-    double output2 = Kp * error2 + Ki * errorSum + Kd * dError;
+  // Calculate PID output
+  double output1 = Kp * error1 + Ki * errorSum + Kd * dError;
+  double output2 = Kp * error2 + Ki * errorSum + Kd * dError;
 
-    // Apply PID output to adjust motor speeds
-    adjustMotorSpeed(output1, output2);
+  // Apply PID output to adjust motor speeds
+  adjustMotorSpeed(output1, output2, BASE_SPEED);
 
-    // Update last error
-    lastError = error1 + error2;
+  // Update last error
+  lastError = error1 + error2;
+}
+
+void pidControl_distance(double setpoint1, double setpoint2) {
+  if (distanceflag) {
+    newLocation1 = encoderValue1;
+    newLocation2 = encoderValue2;
+    distanceflag = false;
+  }
+  // Calculate error
+  double error1 = setpoint1 - (encoderValue1 - newLocation1);
+  double error2 = setpoint2 - (encoderValue2 - newLocation1);
+
+  // Integral term
+  errorSum += error1 + error2;
+
+  // Derivative term
+  double dError = (error1 + error2) - lastError;
+
+  // Calculate PID output
+  double output1 = Kp * error1 + Ki * errorSum + Kd * dError;
+  double output2 = Kp * error2 + Ki * errorSum + Kd * dError;
+
+  // Apply PID output to adjust motor speeds
+  adjustMotorSpeed(output1, output2, 0);
+
+  // Update last error
+  lastError = error1 + error2;
 }
 
 // PID control function for angle
-void pidControl_angleR(int startEncoderValue1,int startEncoderValue2) {
+void pidControl_angleR(int startEncoderValue1, int startEncoderValue2) {
 
-    // Calculate error
-    double error1 = (encoderValue1-startEncoderValue1)-expectedRotationValue;
-    double error2 = (encoderValue2-startEncoderValue2)+expectedRotationValue;
+  // Calculate error
+  double error1 = (encoderValue1 - startEncoderValue1) - expectedRotationValue;
+  double error2 = (encoderValue2 - startEncoderValue2) + expectedRotationValue;
 
-    // Integral term
-    errorSum1 += error1;
-    errorSum2 += error2;
+  // Integral term
+  errorSum1 += error1;
+  errorSum2 += error2;
 
-    // Derivative term
-    double dError1 = error1 - lastError1;
-    double dError2 = error2 - lastError2;
+  // Derivative term
+  double dError1 = error1 - lastError1;
+  double dError2 = error2 - lastError2;
 
-    // Calculate PID output
-    double output1 = Kp * error1 + Ki * errorSum1 + Kd * dError1;
-    double output2 = Kp * error2 + Ki * errorSum2 + Kd * dError2;
+  // Calculate PID output
+  double output1 = Kp * error1 + Ki * errorSum1 + Kd * dError1;
+  double output2 = Kp * error2 + Ki * errorSum2 + Kd * dError2;
 
-    // Apply PID output to adjust motor speeds
-    int offset1 = 0;
-    int offset2 = 0;
-    actualMotorSpeed1 =  output1 +offset1;
-    actualMotorSpeed2 =  output2 +offset2;
+  adjustMotorSpeed(output1, output2, 0);
 
-    // Update last error
-    lastError1 = error1;
-    lastError2 = error2;
+  // Update last error
+  lastError1 = error1;
+  lastError2 = error2;
 }
 
 // PID control function for angle
-void pidControl_angleL(int startEncoderValue1,int startEncoderValue2) {
+void pidControl_angleL(int startEncoderValue1, int startEncoderValue2) {
 
-    // Calculate error
-    double error1 = (encoderValue1-startEncoderValue1)+expectedRotationValue;
-    double error2 = (encoderValue2-startEncoderValue2)-expectedRotationValue;
+  // Calculate error
+  double error1 = (encoderValue1 - startEncoderValue1) + expectedRotationValue;
+  double error2 = (encoderValue2 - startEncoderValue2) - expectedRotationValue;
 
-    // Integral term
-    errorSum1 += error1;
-    errorSum2 += error2;
+  // Integral term
+  errorSum1 += error1;
+  errorSum2 += error2;
 
-    // Derivative term
-    double dError1 = error1 - lastError1;
-    double dError2 = error2 - lastError2;
+  // Derivative term
+  double dError1 = error1 - lastError1;
+  double dError2 = error2 - lastError2;
 
-    // Calculate PID output
-    double output1 = Kp * error1 + Ki * errorSum1 + Kd * dError1;
-    double output2 = Kp * error2 + Ki * errorSum2 + Kd * dError2;
+  // Calculate PID output
+  double output1 = Kp * error1 + Ki * errorSum1 + Kd * dError1;
+  double output2 = Kp * error2 + Ki * errorSum2 + Kd * dError2;
 
-    // Apply PID output to adjust motor speeds
-    int offset1 = 0;
-    int offset2 = 0;
-    actualMotorSpeed1 =  output1 +offset1;
-    actualMotorSpeed2 =  output2 +offset2;
+  // Apply PID output to adjust motor speeds
+  adjustMotorSpeed(output1, output2, 0);
 
-    // Update last error
-    lastError1 = error1;
-    lastError2 = error2;
+  // Update last error
+  lastError1 = error1;
+  lastError2 = error2;
 }
 
 
@@ -227,88 +256,87 @@ void pidControl_angleL(int startEncoderValue1,int startEncoderValue2) {
 
 
 // Function to adjust motor speeds based on PID output
-void adjustMotorSpeed(double output1, double output2) {
-    // Adjust motor speeds using PID output
+void adjustMotorSpeed(double output1, double output2, double SPEED) {
+  // Adjust motor speeds using PID output
 
-    int offset1 = 0;
-    int offset2 = 0;
-    actualMotorSpeed1 = BASE_SPEED + output1 +offset1;
-    actualMotorSpeed2 = BASE_SPEED + output2 +offset2;
+  int offset1 = 0;
+  int offset2 = 0;
+  actualMotorSpeed1 = SPEED + output1 + offset1;
+  actualMotorSpeed2 = SPEED + output2 + offset2;
 }
 
 // Function to get actual speed of motor 1 (replace with your own implementation)
 double getActualSpeed1() {
 
-    // Calculate time interval
-    unsigned long timeInterval = currentTime - prevTime;
+  // Calculate time interval
+  unsigned long timeInterval = currentTime - prevTime;
 
-    // Read encoder counts
-    long currentCount1 = encoderValue1;
+  // Read encoder counts
+  long currentCount1 = encoderValue1;
 
-    // Calculate speed for motor 1
-    double speed1 = calculateSpeed(prevCount1, currentCount1, timeInterval);
+  // Calculate speed for motor 1
+  double speed1 = calculateSpeed(prevCount1, currentCount1, timeInterval);
 
-    // Update previous count and time
-    prevCount1 = currentCount1;
-    prevTime = currentTime;
-    // Measure actual speed of motor 1 using encoders or other feedback mechanisms
-    return speed1;
+  // Update previous count and time
+  prevCount1 = currentCount1;
+  prevTime = currentTime;
+  // Measure actual speed of motor 1 using encoders or other feedback mechanisms
+  return speed1;
 }
 
 double getActualSpeed2() {
 
-    // Calculate time interval
-    unsigned long timeInterval = currentTime - prevTime;
+  // Calculate time interval
+  unsigned long timeInterval = currentTime - prevTime;
 
-    // Read encoder counts
-    long currentCount2 = encoderValue2;
+  // Read encoder counts
+  long currentCount2 = encoderValue2;
 
-    // Calculate speed for motor 1
-    double speed2 = calculateSpeed(prevCount2, currentCount2, timeInterval);
+  // Calculate speed for motor 1
+  double speed2 = calculateSpeed(prevCount2, currentCount2, timeInterval);
 
-    // Update previous count and time
-    prevCount2 = currentCount2;
-    prevTime = currentTime;
-    // Measure actual speed of motor 1 using encoders or other feedback mechanisms
-    return speed2;
+  // Update previous count and time
+  prevCount2 = currentCount2;
+  prevTime = currentTime;
+  // Measure actual speed of motor 1 using encoders or other feedback mechanisms
+  return speed2;
 }
 
 
 // Function to calculate actual speed
 double calculateSpeed(long prevCount, long currentCount, unsigned long timeInterval) {
-    long deltaCount = currentCount - prevCount;
-    double revolutions = deltaCount / encoderResolution; // Convert counts to revolutions
-    double timeSeconds = timeInterval / 1000.0; // Convert milliseconds to seconds
-    double speed = (revolutions / timeSeconds) * 60.0; // Convert to RPM
-    return speed;
+  long deltaCount = currentCount - prevCount;
+  double revolutions = deltaCount / encoderResolution;  // Convert counts to revolutions
+  double timeSeconds = timeInterval / 1000.0;           // Convert milliseconds to seconds
+  double speed = (revolutions / timeSeconds) * 60.0;    // Convert to RPM
+  return speed;
 }
 
-void updateEncoder()
-{
+void updateEncoder() {
 
   //Encoder Update for Encoder 1
-  int MSB1 = digitalRead(encoder1APin); //MSB = most significant bit
-  int LSB1 = digitalRead(encoder1BPin); //LSB = least significant bit
+  int MSB1 = digitalRead(encoder1APin);  //MSB = most significant bit
+  int LSB1 = digitalRead(encoder1BPin);  //LSB = least significant bit
 
-  int encoded1 = (MSB1 << 1) |LSB1; //converting the 2 pin value to single number
-  int sum1  = (lastEncoded1 << 2) | encoded1; //adding it to the previous encoded value
+  int encoded1 = (MSB1 << 1) | LSB1;          //converting the 2 pin value to single number
+  int sum1 = (lastEncoded1 << 2) | encoded1;  //adding it to the previous encoded value
 
-  if(sum1 == 0b1101 || sum1 == 0b0100 || sum1 == 0b0010 || sum1 == 0b1011) encoderValue1 ++;
-  if(sum1 == 0b1110 || sum1 == 0b0111 || sum1 == 0b0001 || sum1 == 0b1000) encoderValue1 --;
+  if (sum1 == 0b1101 || sum1 == 0b0100 || sum1 == 0b0010 || sum1 == 0b1011) encoderValue1++;
+  if (sum1 == 0b1110 || sum1 == 0b0111 || sum1 == 0b0001 || sum1 == 0b1000) encoderValue1--;
 
-  lastEncoded1 = encoded1; //store this value for next time
+  lastEncoded1 = encoded1;  //store this value for next time
 
   //Encoder Update for Encoder 2
-  int MSB2 = digitalRead(encoder2APin); //MSB = most significant bit
-  int LSB2 = digitalRead(encoder2BPin); //LSB = least significant bit
+  int MSB2 = digitalRead(encoder2APin);  //MSB = most significant bit
+  int LSB2 = digitalRead(encoder2BPin);  //LSB = least significant bit
 
-  int encoded2 = (MSB2 << 1) |LSB2; //converting the 2 pin value to single number
-  int sum2  = (lastEncoded2 << 2) | encoded2; //adding it to the previous encoded value
+  int encoded2 = (MSB2 << 1) | LSB2;          //converting the 2 pin value to single number
+  int sum2 = (lastEncoded2 << 2) | encoded2;  //adding it to the previous encoded value
 
-  if(sum2 == 0b1101 || sum2 == 0b0100 || sum2 == 0b0010 || sum2 == 0b1011) encoderValue2 ++;
-  if(sum2 == 0b1110 || sum2 == 0b0111 || sum2 == 0b0001 || sum2 == 0b1000) encoderValue2 --;
+  if (sum2 == 0b1101 || sum2 == 0b0100 || sum2 == 0b0010 || sum2 == 0b1011) encoderValue2++;
+  if (sum2 == 0b1110 || sum2 == 0b0111 || sum2 == 0b0001 || sum2 == 0b1000) encoderValue2--;
 
-  lastEncoded2 = encoded2; //store this value for next time
+  lastEncoded2 = encoded2;  //store this value for next time
 }
 
 
@@ -326,7 +354,24 @@ void updateEncoder()
   //Control the speeds of the both motors
   pidControl_speed(A_SPEED, B_SPEED);
 }*/
-
+void distance(int set_point) {
+  pidControl_distance(set_point, set_point);
+  pidControl_speed(actualMotorSpeed1, actualMotorSpeed2);
+  int error = set_point - (encoderValue1 - newLocation1);
+  if (error >= 10) {
+    Forward(actualMotorSpeed1, actualMotorSpeed2);
+  } else {
+    if (TimeFlag) {
+      starttime = currentTime;
+      TimeFlag = false;
+    }
+    if (currentTime - starttime < 2000) {
+      Forward(actualMotorSpeed1, actualMotorSpeed2);
+    } else {
+      TimeFlag = true;
+    }
+  }
+}
 // Function to stop the motors
 void stopMotors() {
   //controlMotors(0, 0, 0, 0);
@@ -336,12 +381,11 @@ void stopMotors() {
 
   analogWrite(LPWM2, 0);
   analogWrite(RPWM2, 0);
-
 }
 
-void Forward(int A_Speed, int B_Speed){
-    //controlMotors(1, 0, 1, 0, A_Speed, B_Speed);
-  pidControl_speed(A_SPEED, B_SPEED);
+void Forward(int A_Speed, int B_Speed) {
+  //controlMotors(1, 0, 1, 0, A_Speed, B_Speed);
+  pidControl_speed(A_Speed, B_Speed);
   analogWrite(LPWM1, actualMotorSpeed1);
   analogWrite(RPWM1, 0);
 
@@ -350,22 +394,22 @@ void Forward(int A_Speed, int B_Speed){
   analogWrite(RPWM2, 0);
 }
 
-void Motor1L(int Speed){
+void Motor1L(int Speed) {
   analogWrite(LPWM1, Speed);
   analogWrite(RPWM1, 0);
 }
 
-void Motor1R(int Speed){
+void Motor1R(int Speed) {
   analogWrite(LPWM1, 0);
   analogWrite(RPWM1, Speed);
 }
 
-void Motor2R(int Speed){
+void Motor2R(int Speed) {
   analogWrite(LPWM2, 0);
   analogWrite(RPWM2, Speed);
 }
 
-void Motor2L(int Speed){
+void Motor2L(int Speed) {
   analogWrite(LPWM2, Speed);
   analogWrite(RPWM2, 0);
 }
@@ -374,57 +418,82 @@ void Motor2L(int Speed){
   controlMotors(1, 0, 0, 1, BASE_SPEED, BASE_SPEED);
 }*/
 
-void Rotate_90(int direction){
-    int startEncoderValue1;
-    int startEncoderValue2;
-    if ( encoderFlag){
-      startEncoderValue1= encoderValue1;
-      startEncoderValue2= encoderValue2;
-      encoderFlag = false;
-    }
-  
-    
-    if (direction == 0){ // 0 for right 90 rotation
-      pidControl_angleR(startEncoderValue1,startEncoderValue2);
-      if lastError1>=0 && lastError2>=0{
+void Rotate_90(int direction) {
+
+  if (encoderFlag) {
+    startEncoderValue1 = encoderValue1;
+    startEncoderValue2 = encoderValue2;
+    encoderFlag = false;
+  }
+
+
+  if (direction == 0) {  // 0 for right 90 rotation
+    pidControl_angleR(startEncoderValue1, startEncoderValue2);
+    if (lastError1>= 10 && lastError2 >= 10) {
         Motor1L(actualMotorSpeed1);
         Motor2R(actualMotorSpeed2);
       }
 
-      else if lastError1<0 && lastError2<0{
-        Motor1R(actualMotorSpeed1);
-        Motor2L(actualMotorSpeed2);
+    else {
+      if (TimeFlag) {
+        starttime = currentTime;
+        TimeFlag = false;
       }
-      else if lastError1<0{
-        Motor1R(actualMotorSpeed1);
-      }
+      if (currentTime - starttime < 2000) {
+        if (lastError1>= 0 && lastError2 >= 0) {
+            Motor1L(actualMotorSpeed1);
+            Motor2R(actualMotorSpeed2);
+          }
+        else if (lastError1 < 0 && lastError2 < 0) {
+            Motor1R(actualMotorSpeed1);
+            Motor2L(actualMotorSpeed2);
+          }
+        else if (lastError1 < 0){
+            Motor1R(actualMotorSpeed1);
+          }
 
-      else if lastError2<0{
-        Motor2L(actualMotorSpeed2);
+        else if (lastError2 < 0) {
+            Motor2L(actualMotorSpeed2);
+          }
+      } else {
+        TimeFlag = true;
       }
     }
+  }
 
-    if (direction == 1){ // 0 for Left 90 rotation
-      pidControl_angleL(startEncoderValue1,startEncoderValue2);
-      if lastError1>=0 && lastError2>=0{
-        Motor1L(actualMotorSpeed1);
-        Motor2R(actualMotorSpeed2);
-      }
-
-      else if lastError1<0 && lastError2<0{
+  if (direction == 1) {  // 0 for left 90 rotation
+    pidControl_angleL(startEncoderValue1, startEncoderValue2);
+    if (lastError1>= 10 && lastError2 >= 10) {
         Motor1R(actualMotorSpeed1);
         Motor2L(actualMotorSpeed2);
       }
-      else if lastError1<0{
-        Motor1R(actualMotorSpeed1);
-      }
-
-      else if lastError2<0{
-        Motor2L(actualMotorSpeed2);
-      }
+  } else {
+    if (TimeFlag) {
+      starttime = currentTime;
+      TimeFlag = false;
     }
+    if (currentTime - starttime < 2000) {
+      if (lastError1>= 0 && lastError2 >= 0) {
+          Motor1R(actualMotorSpeed1);
+          Motor2L(actualMotorSpeed2);
+        }
+      else if (lastError1 < 0 && lastError2 < 0) {
+          Motor1L(actualMotorSpeed1);
+          Motor2R(actualMotorSpeed2);
+        }
+      else if (lastError1 < 0) {
+          Motor1L(actualMotorSpeed1);
+        }
 
-/*
+      else if (lastError2 < 0) {
+          Motor2R(actualMotorSpeed2);
+        }
+    } else {
+      TimeFlag = true;
+    }
+  }
+
+  /*
         if ((absvalue(encoderValue1 - startEncoderValue1) <= expectedRotationValue) && (absvalue(encoderValue2 - startEncoderValue2) <= expectedRotationValue)){
             pidControl_speed(A_SPEED, B_SPEED);
             analogWrite(LPWM1, actualMotorSpeed1);
@@ -469,83 +538,87 @@ void Rotate_90(int direction){
     }*/
 }
 
-void setup(){
-  currentTime=millis();
+void setup() {
+  currentTime = millis();
   //Encoder Setup
-  Serial.begin (9600);
+  Serial.begin(9600);
 
   //Motor1 pin define
-  pinMode(RPWM1,OUTPUT);
-  pinMode(LPWM1,OUTPUT);
-  pinMode(R_EN1,OUTPUT);
-  pinMode(L_EN1,OUTPUT);
+  pinMode(RPWM1, OUTPUT);
+  pinMode(LPWM1, OUTPUT);
+  pinMode(R_EN1, OUTPUT);
+  pinMode(L_EN1, OUTPUT);
 
   ////Motor1 pin define
-  pinMode(RPWM2,OUTPUT);
-  pinMode(LPWM2,OUTPUT);
-  pinMode(R_EN2,OUTPUT);
-  pinMode(L_EN2,OUTPUT);
+  pinMode(RPWM2, OUTPUT);
+  pinMode(LPWM2, OUTPUT);
+  pinMode(R_EN2, OUTPUT);
+  pinMode(L_EN2, OUTPUT);
 
- //Pull up the EN pins of the motor driver
+  //Pull up the EN pins of the motor driver
   digitalWrite(R_EN1, HIGH);
   digitalWrite(L_EN1, HIGH);
 
   digitalWrite(R_EN2, HIGH);
   digitalWrite(L_EN2, HIGH);
 
-  pinMode(encoder1APin, INPUT); 
+  pinMode(encoder1APin, INPUT);
   pinMode(encoder1BPin, INPUT);
 
-  digitalWrite(encoder1APin, HIGH); //turn pullup resistor on
-  digitalWrite(encoder1BPin, HIGH); //turn pullup resistor on
+  digitalWrite(encoder1APin, HIGH);  //turn pullup resistor on
+  digitalWrite(encoder1BPin, HIGH);  //turn pullup resistor on
 
   //call updateEncoder() when any high/low changed seen
-  //on interrupt 0 (pin 2), or interrupt 1 (pin 3) 
-  attachInterrupt(0, updateEncoder, CHANGE); 
+  //on interrupt 0 (pin 2), or interrupt 1 (pin 3)
+  attachInterrupt(0, updateEncoder, CHANGE);
   attachInterrupt(1, updateEncoder, CHANGE);
 
-  expectedRotationValue = (R/(4*r))*encoderResolution;
-  
+  expectedRotationValue = (R / (4 * r)) * encoderResolution;
 }
 
 void loop() {
+  nowTime = micros();
 
-    if (Serial.available() > 0) {
-        // Read the incoming byte
-        receivedInt = Serial.parseInt();
-    }
-        
-      // Check the received command and control motors accordingly
-      switch (receivedInt) {
-          case STOP:
-              stopMotors();
-              break;
-          case SLOW_FORWARD:
-              Forward(MIN_SPEED, MIN_SPEED);
-              break;
-          case MEDIUM_FORWARD:
-              Forward(BASE_SPEED, BASE_SPEED);
-              break;
-          case FAST_FORWARD:
-              Forward(MAX_SPEED, MAX_SPEED);
-              break;
-          case SLOW_RIGHT:
-              Rotate_Slow(0);
-              break;
-          case SLOW_LEFT:
-              Rotate_Slow(1);
-              break;
-          case RIGHT_90:
-              Rotate_90(0);
-          case LEFT_90:
-              Rotate_90(1);
-              break;
-          default:
-              // Stop the motors if invalid command received
-              stopMotors();
-              break;
+  if (Serial.available() > 0) {
+    // Read the incoming byte
+    receivedInt = Serial.parseInt();
   }
-    
+
+  // Check the received command and control motors accordingly
+  switch (receivedInt) {
+    case STOP:
+      stopMotors();
+      break;
+    case SLOW_FORWARD:
+      Forward(MIN_SPEED, MIN_SPEED);
+      break;
+    case MEDIUM_FORWARD:
+      Forward(BASE_SPEED, BASE_SPEED);
+      break;
+    case FAST_FORWARD:
+      Forward(MAX_SPEED, MAX_SPEED);
+      break;
+/*    case SLOW_RIGHT:
+      Rotate_Slow(0);
+      break;
+    case SLOW_LEFT:
+      Rotate_Slow(1);
+      break;*/
+    case RIGHT_90:
+      Rotate_90(0);
+    case LEFT_90:
+      Rotate_90(1);
+      break;
+    default:
+      // Stop the motors if invalid command received
+      stopMotors();
+      break;
+  }
+  while (true) {
+    if (micros() - nowTime > 2000) {
+      break;
+    }
+  }
 }
 
 /*
