@@ -1,46 +1,60 @@
-<body>
 
-  <p>
-    The "Restaurant Robot: Automated Serving System" project aims to revolutionize restaurant operations by introducing a reliable robot capable of serving food and carrying liquid items. The primary objectives include enhancing the efficiency of delivering drinks to customers' tables and assisting restaurant staff in transporting food items within the premises.
-  </p>
+**Robot LUNA** is a state-of-the-art restaurant waiter robot, designed with a focus on stability and precision. It is equipped with a dual camera setup, including an HD wide-angle camera and a Kinect-2 depth camera, enabling vision-based navigation in a 3D restaurant environment grid. The robot's enhanced stability ensures the safe delivery of food and drinks without spillage, even during braking, thanks to a dedicated stabilization tray circuit LUNA will ensure safety. Internally, LUNA has three Raspberry Pis for separate parallel processing tasks and is connected to custom PCB based on Atmega2560 to get stable and accurate sensor and encoder readings, and to control motor drivers accurately. Externally it communicates with a Restaurant's local server computer with ROS 1 Noetic through the local wifi network ensuring precise navigation path and food order locations based on the restaurant tables. This combination of advanced technology and innovative design makes LUNA a reliable and efficient addition to any restaurant staff.
 
-  <h2>Project Overview</h2>
-  <p>
-    The proposed project focuses on developing a stable and reliable robot for efficient food and liquid-based item service in a restaurant environment. The key emphasis is on automating the delivery process of drinks and providing support for carrying food items.
-  </p>
+> Tools & technologies used: 
+- ROS 1 Noetic Ninjemys, 
+- TensorFlow, 
+- OpenCV, 
+- Open3D,  
+- C++ with Atmega2560 custom PCB for Motor and Stability Control, 
+- Python with Raspberry Pi 4b boards; (3 SBCs),
+- Kinect v2 depth camera and a 150 Degree Wide Angle HD camera.
 
-  <h2>Problem Overview</h2>
-  <p>
-    The hotel industry faces challenges in optimizing the transportation of food and beverage items within restaurants. Manual delivery processes are often time-consuming and inefficient, leading to potential delays and decreased customer satisfaction. Our project addresses this issue by introducing an innovative solution to automate the delivery process of drinks and provide assistance in carrying food items.
-  </p>
+> Team Members:
+- [Hasitha Gallella](https://github.com/HasithaGallella)
+- [Sandun Herath](https://github.com/sandun21)
+- [Yasiru Basnayaka](https://github.com/YasiruDEX)
+- [Lasith Haputhanthri](https://github.com/lasithhaputhanthri)
+- [S Thamirawaran](https://github.com/Thamirawaran)
 
-  <h2>Existing Solutions</h2>
-  <p>
-    Several existing projects have been developed for tasks similar to our proposed project, particularly in carrying food items. However, these solutions often lack the ability to carry liquids and beverages due to stability issues.
-  </p>
+Demonstration VideoLink: https://
 
-  <h2>Proposed Solution</h2>
-  <p>
-    The restaurant robot's device architecture includes a robotic platform, control system, and communication methods. The robotic platform consists of a control circuit, stable chassis, rubber-gripped wheels, and food compartments. The control system utilizes microcontrollers, motor drivers, high RPM motors with odometer encoders, and a suitable power supply. Communication methods include local network communication, swarm technology compatibility, and microcontroller-to-microcontroller communication (UART).
-  </p>
+- With Robot LUNA at Sri Lanka Robotics Challenge 2024 (SLRC 24)
 
-  <h2>Group Members</h2>
-  <ul>
-    <li>210174X Gallella MMHHB</li>
-    <li>210218M Herath HMSI</li>
-    <li>210205V Haputhanthri HLNB</li>
-    <li>210069F Basnayake BYN</li>
-    <li>210629A Thamirawaran S</li>
-  </ul>
+![LUNA_atSLRC](https://github.com/LUNA-Vision-based-Restaurant-Robot/.github/assets/111054736/354b1bcc-fff9-4360-9827-44e59350e603)
 
-  <h2>Research and Literature Review</h2>
-  <p>
-    The project draws inspiration from research such as Vo Nhu Thanh's work on a restaurant serving robot using a line-following approach and Faruk and Ivanov's exploration of the robotic restaurant experience among global travelers. These studies contribute valuable insights into practical and efficient applications of robotics in the hospitality sector.
-  </p>
 
-  <h2>References</h2>
-  <p>
-    [1] The robot named Pearl is delivering food at a local restaurant. [2] Understanding the robotic restaurant experience: a multiple case study [3] University of Houston testing new robot waiter [4] Local restaurant using robot waiter (2023) [5] Xinhe Motor. Product Display [6] Thanh, V. N. Development of Restaurant Serving Robot Using Line Following Approach [7] Faruk, A., Ivanov, S. H. (2020). Robotic Restaurant Experience Among Global Travelers: A Multiple Case Study.
-  </p>
 
-</body>
+## Robot LUNA System Overview
+
+The main components of the LUNA Restaurant Robot are illustrated in the block diagram below. This includes the central restaurant computer, local WiFi network, robot's computer unit, motor controller unit, stabilization tray controller unit, cameras, and power unit.
+
+![Main Block Diagram of LUNA Restaurant Robot](https://github.com/LUNA-Vision-based-Restaurant-Robot/.github/blob/main/images/SubUnits_Diagram.jpg?raw=true)
+
+
+## LUNA Sub System Explanation
+
+1. **Central Restaurant Computer**: Manages overall operations and communicates with the robot via the local WiFi network.
+2. **Wide Angle Camera**: Provides a broad view of the robot's surroundings for navigation and obstacle avoidance.
+3. **Kinect v2 Depth Camera**: Captures depth information to help the robot understand its environment in three dimensions.
+4. **Motor Controller Unit**: Controls the movement of the robot's wheels and ensures precise navigation.
+5. **Stabilization Tray Controller Unit**: Maintains the stability of the tray to prevent spillage while the robot is moving.
+6. **Power Unit**: Supplies power to all components of the robot, ensuring uninterrupted operation.
+
+## PCB Details
+
+The LUNA robot's functionalities are controlled by a custom-designed PCB which includes two main units: the Motor Controller Unit and the Stabilization Tray Controller Unit. Below are the front and back views of the PCB:
+
+<table>
+  <tr>
+    <td><img src="https://github.com/LUNA-Vision-based-Restaurant-Robot/.github/blob/main/images/PCB_Front.jpg?raw=true" alt="PCB Front View" width="400"/></td>
+    <td><img src="https://github.com/LUNA-Vision-based-Restaurant-Robot/.github/blob/main/images/PCB_Back.jpg?raw=true" alt="PCB Back View" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center">PCB Front View</td>
+    <td align="center">PCB Back View</td>
+  </tr>
+</table>
+
+Special thanks to Dr. Ranga Rodrigo, Prof. Rohan Munasinghe, and Prof. J.A.K.S. Jayasinghe for their guidance and support throughout our journey.
+Also we would like to extend our special gratitude to [Department of Electronic and Telecommunication Engineering, University of Moratuwa](https://ent.uom.lk/) for the invaluable support to the project. 
